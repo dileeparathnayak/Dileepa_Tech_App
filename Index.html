@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>DileepaTech Admin Panel</title>
+  <style>
+    :root {
+      --primary: #000;
+      --accent: #00d9ff;
+      --bg: #121212;
+      --text: #fff;
+      --error: #ff4d4d;
+      --success: #4caf50;
+      --button-hover: #00bcd4;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    header {
+      width: 100%;
+      background: var(--primary);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      border-bottom: 2px solid var(--accent);
+    }
+
+    header h1 {
+      color: var(--accent);
+    }
+
+    #auth-buttons button, #user-info button {
+      background: var(--accent);
+      border: none;
+      color: black;
+      padding: 0.5rem 1rem;
+      margin-left: 0.5rem;
+      cursor: pointer;
+      border-radius: 4px;
+      font-weight: bold;
+    }
+
+    #auth-buttons button:hover, #user-info button:hover {
+      background: var(--button-hover);
+    }
+
+    .form-box {
+      background: #1e1e1e;
+      padding: 2rem;
+      border-radius: 10px;
+      box-shadow: 0 0 10px #000;
+      width: 100%;
+      max-width: 400px;
+      margin-top: 2rem;
+    }
+
+    .form-box h2 {
+      text-align: center;
+      color: var(--accent);
+      margin-bottom: 1rem;
+    }
+
+    .form-box input {
+      width: 100%;
+      margin: 0.5rem 0;
+      padding: 0.8rem;
+      background: #2c2c2c;
+      border: 2px solid #444;
+      color: white;
+      border-radius: 5px;
+      font-size: 1rem;
+    }
+
+    .form-box button {
+      width: 100%;
+      margin-top: 1rem;
+      padding: 0.8rem;
+      background: var(--accent);
+      border: none;
+      color: black;
+      font-weight: bold;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    #message {
+      margin-top: 1rem;
+      padding: 1rem;
+      border-radius: 5px;
+      display: none;
+      text-align: center;
+    }
+
+    #message.success { background-color: var(--success); color: black; }
+    #message.error { background-color: var(--error); color: white; }
+
+    #dashboard, #adminDashboard {
+      margin-top: 2rem;
+      padding: 2rem;
+      background: #1e1e1e;
+      border-radius: 10px;
+      display: none;
+      width: 100%;
+      max-width: 700px;
+    }
+
+    #adminDashboard table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+
+    #adminDashboard th, #adminDashboard td {
+      padding: 0.5rem;
+      border: 1px solid #444;
+      text-align: left;
+    }
+
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>DileepaTech</h1>
+    <div id="auth-buttons">
+      <button onclick="showLogin()">Login</button>
+      <button onclick="showRegister()">Register</button>
+    </div>
+    <div id="user-info" class="hidden">
+      Welcome, <span id="usernameDisplay"></span>!
+      <button onclick="logout()">Logout</button>
+    </div>
+  </header>
+
+  <div id="message"></div>
+
+  <div id="loginForm" class="form-box hidden">
+    <h2>Login</h2>
+    <input type="text" id="loginUsername" placeholder="Username" />
+    <input type="password" id="loginPassword" placeholder="Password" />
+    <button onclick="login()">Login</button>
+  </div>
+
+  <div id="registerForm" class="form-box hidden">
+    <h2>Register</h2>
+    <input type="text" id="registerUsername" placeholder="Username" />
+    <input type="password" id="registerPassword" placeholder="Password" />
+    <button onclick="register()">Register</button>
+  </div>
+
+  <div id="dashboard">
+    <h2>Welcome to your dashboard, <span id="dashboardUsername"></span>!</h2>
+    <p>You now have access to exclusive DileepaTech content.</p>
+  </div>
+
+  <div id="adminDashboard">
+    <h2>Admin Dashboard</h2>
+    <p>All Registered Users and Login History:</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Username</th>
+          <th>Password</th>
+          <th>Login Times</th>
+        </tr>
+      </thead>
+      <tbody id="adminTableBody"></tbody>
+    </table>
+  </div>
+
+  <script>
+    const users = {
+      admin: "admin123"
+    };
+    const loginHistory = {};
+
+    function showMessage(msg, type) {
+      const msgBox = document.getElementById("message");
+      msgBox.textContent = msg;
+      msgBox.className = type === "error" ? "error" : "success";
+      msgBox.id = "message";
+      msgBox.style.display = "block";
+      setTimeout(() => {
+        msgBox.style.display = "none";
+      }, 3000);
+    }
+
+    function showLogin() {
+      document.getElementById("loginForm").classList.remove("hidden");
+      document.getElementById("registerForm").classList.add("hidden");
+      document.getElementById("dashboard").style.display = "none";
+      document.getElementById("adminDashboard").style.display = "none";
+    }
+
+    function showRegister() {
+      document.getElementById("registerForm").classList.remove("hidden");
+      document.getElementById("loginForm").classList.add("hidden");
+    }
+
+    function register() {
+      const username = document.getElementById("registerUsername").value;
+      const password = document.getElementById("registerPassword").value;
+
+      if (!username || !password) {
+        showMessage("Please fill in both fields", "error");
+        return;
+      }
+
+      if (users[username]) {
+        showMessage("Username already registered!", "error");
+        return;
+      }
+
+      users[username] = password;
+      loginHistory[username] = [];
+      showMessage("Registration successful! Please login.", "success");
+      showLogin();
+    }
+
+    function login() {
+      const username = document.getElementById("loginUsername").value;
+      const password = document.getElementById("loginPassword").value;
+
+      if (!users[username]) {
+        showMessage("Username not found. Please register first.", "error");
+        showRegister();
+        return;
+      }
+
+      if (users[username] !== password) {
+        showMessage("Incorrect password. Try again.", "error");
+        return;
+      }
+
+      document.getElementById("loginForm").classList.add("hidden");
+      document.getElementById("registerForm").classList.add("hidden");
+      document.getElementById("auth-buttons").classList.add("hidden");
+      document.getElementById("user-info").classList.remove("hidden");
+
+      document.getElementById("usernameDisplay").textContent = username;
+
+      const now = new Date().toLocaleString();
+      if (!loginHistory[username]) loginHistory[username] = [];
+      loginHistory[username].push(now);
+
+      if (username === "admin") {
+        document.getElementById("adminDashboard").style.display = "block";
+        updateAdminTable();
+      } else {
+        document.getElementById("dashboard").style.display = "block";
+        document.getElementById("dashboardUsername").textContent = username;
+      }
+
+      showMessage("Login successful!", "success");
+    }
+
+    function updateAdminTable() {
+      const tbody = document.getElementById("adminTableBody");
+      tbody.innerHTML = "";
+
+      for (const user in users) {
+        if (user === "admin") continue;
+        const tr = document.createElement("tr");
+        const loginTimes = loginHistory[user] ? loginHistory[user].join("<br>") : "Never";
+        tr.innerHTML = `
+          <td>${user}</td>
+          <td>${users[user]}</td>
+          <td>${loginTimes}</td>
+        `;
+        tbody.appendChild(tr);
+      }
+    }
+
+    function logout() {
+      document.getElementById("dashboard").style.display = "none";
+      document.getElementById("adminDashboard").style.display = "none";
+      document.getElementById("auth-buttons").classList.remove("hidden");
+      document.getElementById("user-info").classList.add("hidden");
+      document.getElementById("loginUsername").value = "";
+      document.getElementById("loginPassword").value = "";
+      showLogin();
+    }
+
+    // Show login form on load
+    showLogin();
+  </script>
+</body>
+</html>
