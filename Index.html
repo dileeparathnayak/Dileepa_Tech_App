@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>DileepaTech Admin Panel</title>
+  <title>DileepaTech</title>
   <style>
     :root {
       --primary: #000;
@@ -117,13 +117,13 @@
       max-width: 700px;
     }
 
-    #adminDashboard table {
+    table {
       width: 100%;
       border-collapse: collapse;
       margin-top: 1rem;
     }
 
-    #adminDashboard th, #adminDashboard td {
+    th, td {
       padding: 0.5rem;
       border: 1px solid #444;
       text-align: left;
@@ -140,13 +140,14 @@
       <button onclick="showRegister()">Register</button>
     </div>
     <div id="user-info" class="hidden">
-      Welcome, <span id="usernameDisplay"></span>!
+      Welcome <span id="usernameDisplay"></span>!
       <button onclick="logout()">Logout</button>
     </div>
   </header>
 
   <div id="message"></div>
 
+  <!-- Login Form -->
   <div id="loginForm" class="form-box hidden">
     <h2>Login</h2>
     <input type="text" id="loginUsername" placeholder="Username" />
@@ -154,27 +155,41 @@
     <button onclick="login()">Login</button>
   </div>
 
+  <!-- Register Form -->
   <div id="registerForm" class="form-box hidden">
     <h2>Register</h2>
     <input type="text" id="registerUsername" placeholder="Username" />
     <input type="password" id="registerPassword" placeholder="Password" />
+    <input type="email" id="registerEmail" placeholder="Email" />
     <button onclick="register()">Register</button>
   </div>
 
-  <div id="dashboard">
+  <!-- User Dashboard -->
+  <div id="dashboard" class="hidden">
     <h2>Welcome to your dashboard, <span id="dashboardUsername"></span>!</h2>
     <p>You now have access to exclusive DileepaTech content.</p>
+
+    <h3>DileepaTech YouTube Channel</h3>
+    <iframe 
+      width="100%" 
+      height="400" 
+      src="https://www.youtube.com/embed?listType=user_uploads&list=Dileepa_Tech" 
+      title="DileepaTech Channel"
+      frameborder="0" 
+      allow="autoplay; clipboard-write; encrypted-media; picture-in-picture" 
+      allowfullscreen>
+    </iframe>
   </div>
 
-  <div id="adminDashboard">
-    <h2>Admin Dashboard</h2>
-    <p>All Registered Users and Login History:</p>
+  <!-- Admin Dashboard -->
+  <div id="adminDashboard" class="hidden">
+    <h2>Admin Panel: All Users</h2>
     <table>
       <thead>
         <tr>
           <th>Username</th>
-          <th>Password</th>
-          <th>Login Times</th>
+          <th>Email</th>
+          <th>Login History</th>
         </tr>
       </thead>
       <tbody id="adminTableBody"></tbody>
@@ -182,120 +197,111 @@
   </div>
 
   <script>
-    const users = {
-      admin: "admin123"
-    };
-    const loginHistory = {};
+    const usersDB = JSON.parse(localStorage.getItem('usersDB')) || [];
+    let loggedInUser = JSON.parse(localStorage.getItem('loggedInUser')) || null;
 
-    function showMessage(msg, type) {
-      const msgBox = document.getElementById("message");
-      msgBox.textContent = msg;
-      msgBox.className = type === "error" ? "error" : "success";
-      msgBox.id = "message";
-      msgBox.style.display = "block";
-      setTimeout(() => {
-        msgBox.style.display = "none";
-      }, 3000);
-    }
+    window.onload = function () {
+      if (!usersDB.find(u => u.username === 'admin')) {
+        usersDB.push({ username: 'admin', password: 'admin123', email: 'admin@example.com', loginHistory: [] });
+        localStorage.setItem('usersDB', JSON.stringify(usersDB));
+      }
+      if (loggedInUser) showDashboard(loggedInUser);
+    };
 
     function showLogin() {
-      document.getElementById("loginForm").classList.remove("hidden");
-      document.getElementById("registerForm").classList.add("hidden");
-      document.getElementById("dashboard").style.display = "none";
-      document.getElementById("adminDashboard").style.display = "none";
+      document.getElementById('loginForm').classList.remove('hidden');
+      document.getElementById('registerForm').classList.add('hidden');
+      document.getElementById('message').style.display = 'none';
     }
 
     function showRegister() {
-      document.getElementById("registerForm").classList.remove("hidden");
-      document.getElementById("loginForm").classList.add("hidden");
-    }
-
-    function register() {
-      const username = document.getElementById("registerUsername").value;
-      const password = document.getElementById("registerPassword").value;
-
-      if (!username || !password) {
-        showMessage("Please fill in both fields", "error");
-        return;
-      }
-
-      if (users[username]) {
-        showMessage("Username already registered!", "error");
-        return;
-      }
-
-      users[username] = password;
-      loginHistory[username] = [];
-      showMessage("Registration successful! Please login.", "success");
-      showLogin();
+      document.getElementById('registerForm').classList.remove('hidden');
+      document.getElementById('loginForm').classList.add('hidden');
+      document.getElementById('message').style.display = 'none';
     }
 
     function login() {
-      const username = document.getElementById("loginUsername").value;
-      const password = document.getElementById("loginPassword").value;
+      const username = document.getElementById('loginUsername').value;
+      const password = document.getElementById('loginPassword').value;
+      const user = usersDB.find(u => u.username === username && u.password === password);
 
-      if (!users[username]) {
-        showMessage("Username not found. Please register first.", "error");
-        showRegister();
-        return;
-      }
-
-      if (users[username] !== password) {
-        showMessage("Incorrect password. Try again.", "error");
-        return;
-      }
-
-      document.getElementById("loginForm").classList.add("hidden");
-      document.getElementById("registerForm").classList.add("hidden");
-      document.getElementById("auth-buttons").classList.add("hidden");
-      document.getElementById("user-info").classList.remove("hidden");
-
-      document.getElementById("usernameDisplay").textContent = username;
-
-      const now = new Date().toLocaleString();
-      if (!loginHistory[username]) loginHistory[username] = [];
-      loginHistory[username].push(now);
-
-      if (username === "admin") {
-        document.getElementById("adminDashboard").style.display = "block";
-        updateAdminTable();
+      if (user) {
+        user.loginHistory.push(new Date().toLocaleString());
+        localStorage.setItem('usersDB', JSON.stringify(usersDB));
+        loggedInUser = user;
+        localStorage.setItem('loggedInUser', JSON.stringify(user));
+        showDashboard(user);
       } else {
-        document.getElementById("dashboard").style.display = "block";
-        document.getElementById("dashboardUsername").textContent = username;
+        showMessage('Invalid credentials!', 'error');
       }
-
-      showMessage("Login successful!", "success");
     }
 
-    function updateAdminTable() {
-      const tbody = document.getElementById("adminTableBody");
-      tbody.innerHTML = "";
+    function register() {
+      const username = document.getElementById('registerUsername').value;
+      const password = document.getElementById('registerPassword').value;
+      const email = document.getElementById('registerEmail').value;
 
-      for (const user in users) {
-        if (user === "admin") continue;
-        const tr = document.createElement("tr");
-        const loginTimes = loginHistory[user] ? loginHistory[user].join("<br>") : "Never";
-        tr.innerHTML = `
-          <td>${user}</td>
-          <td>${users[user]}</td>
-          <td>${loginTimes}</td>
-        `;
-        tbody.appendChild(tr);
+      if (!username || !password || !email) {
+        showMessage('All fields are required!', 'error');
+        return;
+      }
+
+      if (usersDB.find(u => u.username === username)) {
+        showMessage('Username already exists!', 'error');
+        return;
+      }
+
+      usersDB.push({ username, password, email, loginHistory: [] });
+      localStorage.setItem('usersDB', JSON.stringify(usersDB));
+      showMessage('Registration successful! Please log in.', 'success');
+      showLogin();
+    }
+
+    function showDashboard(user) {
+      document.getElementById('auth-buttons').classList.add('hidden');
+      document.getElementById('user-info').classList.remove('hidden');
+      document.getElementById('usernameDisplay').textContent = user.username;
+      document.getElementById('dashboardUsername').textContent = user.username;
+      document.getElementById('loginForm').classList.add('hidden');
+      document.getElementById('registerForm').classList.add('hidden');
+      document.getElementById('dashboard').classList.remove('hidden');
+
+      if (user.username === 'admin') {
+        document.getElementById('adminDashboard').classList.remove('hidden');
+        populateAdminDashboard();
       }
     }
 
     function logout() {
-      document.getElementById("dashboard").style.display = "none";
-      document.getElementById("adminDashboard").style.display = "none";
-      document.getElementById("auth-buttons").classList.remove("hidden");
-      document.getElementById("user-info").classList.add("hidden");
-      document.getElementById("loginUsername").value = "";
-      document.getElementById("loginPassword").value = "";
-      showLogin();
+      loggedInUser = null;
+      localStorage.removeItem('loggedInUser');
+      document.getElementById('user-info').classList.add('hidden');
+      document.getElementById('auth-buttons').classList.remove('hidden');
+      document.getElementById('dashboard').classList.add('hidden');
+      document.getElementById('adminDashboard').classList.add('hidden');
+      showMessage('Logged out successfully!', 'success');
     }
 
-    // Show login form on load
-    showLogin();
+    function showMessage(text, type) {
+      const msg = document.getElementById('message');
+      msg.textContent = text;
+      msg.className = type === 'error' ? 'error' : 'success';
+      msg.style.display = 'block';
+    }
+
+    function populateAdminDashboard() {
+      const body = document.getElementById('adminTableBody');
+      body.innerHTML = '';
+      usersDB.forEach(user => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${user.username}</td>
+          <td>${user.email}</td>
+          <td>${user.loginHistory.join('<br>')}</td>
+        `;
+        body.appendChild(row);
+      });
+    }
   </script>
 </body>
 </html>
